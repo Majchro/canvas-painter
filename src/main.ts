@@ -1,0 +1,44 @@
+import DrawLayer from "./layers/Draw";
+import MainLayer from "./layers/Main";
+import Cursor from "./tools/Cursor";
+import DrawRectangle from "./tools/DrawRectangle";
+import { Tool } from "./types";
+import Store from "./utilities/Store";
+
+class App {
+  private toolInstance: Cursor | DrawRectangle | null = null
+
+  constructor() {
+    const store = new Store();
+    store.observe('tool', () => {
+      this.handleToolChange(store.tool);
+    });
+
+    document.querySelectorAll('.js-toolbar > *[data-tool]').forEach(tool => {
+      tool.addEventListener('click', (ev) => {
+        const toolElement = ev.currentTarget as HTMLElement;
+        store.tool = toolElement.dataset.tool as Tool;
+      });
+    })
+
+    new MainLayer();
+  }
+
+  handleToolChange(tool: Tool) {
+    if (this.toolInstance) this.toolInstance.destroy();
+    document.querySelectorAll('canvas:not(.js-main-layer)').forEach(canvas => canvas.remove());
+    const canvasLayer = new DrawLayer();
+    switch (tool) {
+      case Tool.Cursor:
+        this.toolInstance = new Cursor(canvasLayer.canvas);
+        return;
+      case Tool.DrawRectangle:
+        this.toolInstance = new DrawRectangle(canvasLayer.canvas);
+        return;
+    }
+  }
+}
+
+export default App;
+
+new App();
