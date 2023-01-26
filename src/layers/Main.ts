@@ -13,9 +13,7 @@ class Main {
     store.observe('elements', () => {
       console.log('rysuj', store.elements)
       context?.clearRect(0, 0, canvas.width, canvas.height);
-      store.elements.forEach(element => {
-        if (element instanceof Rectangle) return element.draw(context);
-      });
+      store.elements.forEach(element => element.draw(context));
     });
   }
 

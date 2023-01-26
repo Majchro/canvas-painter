@@ -1,12 +1,12 @@
 import DrawLayer from "./layers/Draw";
 import MainLayer from "./layers/Main";
-import Cursor from "./tools/Cursor";
-import DrawRectangle from "./tools/DrawRectangle";
+import CursorTool from "./tools/Cursor";
+import DrawTool from "./tools/Draw";
 import { Tool } from "./types";
 import Store from "./utilities/Store";
 
 class App {
-  private toolInstance: Cursor | DrawRectangle | null = null
+  private toolInstance: CursorTool | DrawTool | null = null
 
   constructor() {
     const store = new Store();
@@ -30,10 +30,13 @@ class App {
     const canvasLayer = new DrawLayer();
     switch (tool) {
       case Tool.Cursor:
-        this.toolInstance = new Cursor(canvasLayer.canvas);
+        this.toolInstance = new CursorTool(canvasLayer.canvas);
         return;
       case Tool.DrawRectangle:
-        this.toolInstance = new DrawRectangle(canvasLayer.canvas);
+        this.toolInstance = new DrawTool('rectangle', canvasLayer.canvas);
+        return;
+      case Tool.DrawCircle:
+        this.toolInstance = new DrawTool('circle', canvasLayer.canvas);
         return;
     }
   }

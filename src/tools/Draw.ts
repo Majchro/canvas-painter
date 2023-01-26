@@ -1,16 +1,20 @@
-// import { RectangleElement } from "../types";
-import Rectangle from "../elements/Rectangle";
 import { ErrorReason } from "../types";
 import Store from "../utilities/Store";
+import Circle from "../elements/Circle";
+import Rectangle from "../elements/Rectangle";
 
-class DrawRectangle {
+type ElementType = Circle | Rectangle;
+
+class Draw {
   private readonly canvas: HTMLCanvasElement;
   private readonly context: CanvasRenderingContext2D;
-  private element: Rectangle | null = null;
+  private element: ElementType | null = null;
   private readonly store: Store;
+  private readonly tool;
 
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(tool: 'circle' | 'rectangle', canvas: HTMLCanvasElement) {
     this.canvas = canvas;
+    this.tool = tool;
     this.store = new Store();
 
     const context = this.canvas.getContext('2d')
@@ -27,7 +31,7 @@ class DrawRectangle {
   }
 
   destroy() {
-    console.log('destroy')
+    console.log('destroy');
   }
 
   private initializeListeners() {
@@ -37,7 +41,7 @@ class DrawRectangle {
   }
 
   private handleMouseDown(ev: MouseEvent) {
-    this.element = new Rectangle;
+    this.element = this.getToolInstance();
     this.element.setStartPoint(ev.offsetX, ev.offsetY);
   }
 
@@ -71,6 +75,13 @@ class DrawRectangle {
     this.context?.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.element = null;
   }
+
+  private getToolInstance() {
+    switch(this.tool) {
+      case 'circle': return new Circle;
+      case 'rectangle': return new Rectangle;
+    }
+  }
 }
 
-export default DrawRectangle;
+export default Draw;

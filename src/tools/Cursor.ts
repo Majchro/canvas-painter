@@ -1,10 +1,10 @@
 import Rectangle from "../elements/Rectangle";
-import { Direction, ErrorReason } from "../types";
+import { Direction, ErrorReason, Point } from "../types";
 import Store from "../utilities/Store";
 
-type ResizeData = {
-  startPoint: { x: number, y: number } | null;
-  resizeDirection: Direction | null;
+type TransformData = {
+  startPoint: Point | null;
+  direction: Direction | null;
 }
 
 class Cursor {
@@ -12,14 +12,23 @@ class Cursor {
   private readonly context: CanvasRenderingContext2D;
   private focusedElement: Rectangle | null = null;
   private readonly store: Store;
-  private resizeData = new Proxy<ResizeData>({
+  private lastResizePoint: Point | null = null;
+  private transformData = new Proxy<TransformData>({
     startPoint: null,
-    resizeDirection: null,
+    direction: null,
   }, {
     set: (obj, prop, value) => {
-      const key = prop as keyof ResizeData;
+      const key = prop as keyof TransformData;
       obj[key] = value;
-      if (key === 'resizeDirection') document.body.setAttribute('style', `cursor: ${value ? `${value}-resize` : 'default'}`);
+      if (key !== 'direction') return true;
+      switch(value) {
+        case Direction.C:
+          document.body.setAttribute('style', 'cursor: move');
+          break;
+        default:
+          document.body.setAttribute('style', `cursor: ${value ? `${value}-resize` : 'default'}`);
+          break;
+      }
       return true;
     }
   });
@@ -62,50 +71,66 @@ class Cursor {
   }
 
   private handleMouseDown(ev: MouseEvent) {
+    this.handleDropdownOpen(ev);
     this.handleResize(ev);
   }
 
   private handleMouseMove(ev: MouseEvent) {
     this.setCursor(ev);
+
+    if (!this.focusedElement) return;
+    if (!this.transformData.startPoint) return;
+    if (!this.transformData.direction) return;
+
+    if (this.transformData.direction !== Direction.C) {
+      const value = this.getResizeValue(ev, this.lastResizePoint || this.transformData.startPoint);
+      this.focusedElement.resize(this.transformData.direction, value);
+    } else {
+      const basePoints = this.lastResizePoint || this.transformData.startPoint;
+      const x = ev.offsetX - basePoints.x;
+      const y = ev.offsetY - basePoints.y;
+      this.focusedElement.move(x, y)
+    }
+    this.drawFocusedElement();
+    this.lastResizePoint = { x: ev.offsetX, y: ev.offsetY };
   }
 
   private setCursor(ev: MouseEvent) {
     if (!this.focusedElement) return;
-    if (this.resizeData.startPoint) return;
+    if (this.transformData.startPoint) return;
 
     const direction = this.focusedElement.getCursorDirection(ev.offsetX, ev.offsetY);
-    this.resizeData.resizeDirection = direction;
+    this.transformData.direction = direction;
   }
 
   private handleResize(ev: MouseEvent) {
-    if (!this.resizeData.resizeDirection) return;
-    if (this.resizeData.startPoint) return;
+    if (!this.transformData.direction) return;
+    if (this.transformData.startPoint) return;
 
-    this.resizeData.startPoint = { x: ev.offsetX, y: ev.offsetY };
+    this.transformData.startPoint = { x: ev.offsetX, y: ev.offsetY };
   }
 
   private handleMouseUp(ev: MouseEvent) {
-    if (!this.resizeData.resizeDirection) return this.handleElementSelect(ev);
-    if (!this.resizeData.startPoint) return;
+    if (!this.transformData.direction) return this.handleElementSelect(ev);
+    if (!this.transformData.startPoint) return;
     if (!this.focusedElement) return;
 
-    let value = 0;
-    if (this.resizeData.resizeDirection === Direction.N || this.resizeData.resizeDirection === Direction.S) value = ev.offsetY - this.resizeData.startPoint.y;
-    if (this.resizeData.resizeDirection === Direction.W || this.resizeData.resizeDirection === Direction.E) value = ev.offsetX - this.resizeData.startPoint.x;
+    this.transformData.direction = null;
+    this.transformData.startPoint = null;
+    this.lastResizePoint = null;
+  }
 
-    this.focusedElement.resize(this.resizeData.resizeDirection, value);
-    this.resizeData.resizeDirection = null;
-    this.resizeData.startPoint = null;
-    this.drawFocusedElement();
+  private handleDropdownOpen(ev: MouseEvent) {
+    if (ev.button !== 2) return;
+    if (!this.focusedElement) return;
+    if (!this.focusedElement.isPointInside(ev.offsetX, ev.offsetY)) return;
+
+    console.log('open dropdown')
   }
 
   private handleElementSelect(ev: MouseEvent) {
-    const focusedElement = this.store.elements.find(element => element.isPointInside(ev.pageX, ev.pageY));
-    if (!focusedElement) return;
-
-    console.log(focusedElement, this.focusedElement)
     if (this.focusedElement) this.storeFocusedElement();
-
+    const focusedElement = this.store.elements.find(element => element.isPointInside(ev.pageX, ev.pageY));
     if (!focusedElement) return;
 
     this.store.removeElement(focusedElement.id);
@@ -126,6 +151,16 @@ class Cursor {
 
     this.focusedElement = null;
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  private getResizeValue(ev: MouseEvent, resizePoint: Point): number {
+    if (!this.transformData.direction) return 0;
+
+    if (this.transformData.direction === Direction.N || this.transformData.direction === Direction.S) return ev.offsetY - resizePoint.y;
+
+    if (this.transformData.direction === Direction.W || this.transformData.direction === Direction.E) return ev.offsetX - resizePoint.x;
+
+    return 0;
   }
 }
 

@@ -2,10 +2,11 @@ import { Tool } from "../types";
 import { v4 } from 'uuid';
 import produce from "immer";
 import Rectangle from "../elements/Rectangle";
+import Circle from "../elements/Circle";
 
 type StoreType = {
   tool: Tool;
-  elements: Array<Rectangle>;
+  elements: Array<Rectangle | Circle>;
 }
 
 const defaultStore: StoreType = {
@@ -51,7 +52,7 @@ class Store {
     return this.store.elements;
   }
 
-  addElement(element: Rectangle) {
+  addElement(element: Rectangle | Circle) {
     this.store.elements = produce(this.store.elements, draft => {
       draft.push(element);
     });

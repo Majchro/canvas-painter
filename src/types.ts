@@ -20,15 +20,15 @@ export enum Direction {
   SW = 'sw',
   W = 'w',
   NW = 'nw',
+  C = 'c',
 }
 
-export interface Element {
-  id: string;
-  setStartPoint(x: number, y: number): void;
-  setEndPoint(x: number, y: number): void;
+export interface IElement {
   draw(context: CanvasRenderingContext2D, filled: boolean): void;
-  isValid(): boolean;
   isPointInside(x: number, y: number): boolean;
-  getCursorDirection(x: number, y: number): Direction | null;
-  resize(direction: Direction, value: number): void;
+}
+
+export type Point = {
+  x: number;
+  y: number;
 }
