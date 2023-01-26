@@ -6,3 +6,7 @@ App to drawing elements on canvas
 - Typescript
 - Vitest
 - JSDOM
+
+### What I've learned:
+- testing with Vitest
+- store data with variables observer in singleton
